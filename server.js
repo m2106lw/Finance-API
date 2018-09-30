@@ -7,7 +7,7 @@ var mysql = require('mysql');
 const config = require('./config');
 
 // Functions - Needed throughout
-var functions = require('./api_modules/functions/functions');
+var functions = require('./lib/functions');
 // Needed functions
 var getTimestamp = functions.getTimestamp;
 var logAPICall = functions.logAPICall;
@@ -29,23 +29,6 @@ server.once('error', function(err) {
 	}
 });
 
-////Initiallising connection string
-var dbConfig = mysql.createPool({
-	user: config.financeDatabase.databaseUser,
-	password: config.financeDatabase.databasePass,
-	host: config.financeDatabase.databaseServer,
-	database: config.financeDatabase.databaseName,
-	port: 3306
-});
-// Might be able to do:
-// var dbConfig = {
-	// user: config.financeDatabase.databaseUser,
-	// password: config.financeDatabase.databasePass,
-	// host: config.financeDatabase.databaseServer,
-	// database: config.financeDatabase.databaseName,
-	// port: 3306
-// };
-
 // Body Parser Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -58,7 +41,7 @@ app.use(function (req, res, next) {
     //Enabling CORS
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With, Authorization, Content-Type, Accept, X-Auth-Token, X-Rundeck-Auth-Token");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With, Authorization, Content-Type, Accept, X-Auth-Token");
     next();
 });
 
@@ -69,34 +52,27 @@ app.use('/login', authRoutes);
 var tokenRoutes = express.Router(); 
 app.use('/api', tokenRoutes);
 
-// We will hide this call behind a tokenRoutes
-// Doesn't exist right now
-tokenRoutes.use(function(req, res, next) {
-	// Catch preflight
-	if (req.method == 'OPTIONS') {
-		res.send()
-	}
-	else {
-		next();
-	}
-});
 
 // Any auth will have to go here
+var loginAPI = require('./lib/routes/login');
+loginAPI(authRoutes);
+var tokenAPI = require('./lib/routes/tokens');
+tokenAPI(tokenRoutes);
 
 // Load up the api modules
 // Accounts
-var accountsAPI = require('./api_modules/accounts/accounts');
-accountsAPI(tokenRoutes, functions, dbConfig);
+var accountsAPI = require('./lib/routes/accounts');
+accountsAPI(tokenRoutes);
 // Balance
-var balance = require('./api_modules/balance/balance');
+var balance = require('./lib/routes/balance');
 // Balance
-var car = require('./api_modules/car/car');
+var car = require('./lib/routes/car');
 // Categories
-var categories = require('./api_modules/categories/categories');
+var categories = require('./lib/routes/categories');
 // Gas
-var gas = require('./api_modules/gas/gas');
+var gas = require('./lib/routes/gas');
 // Payments
-var payments = require('./api_modules/payments/payments');
+var payments = require('./lib/routes/payments');
 // Users
-var usersAPI = require('./api_modules/users/users');
-usersAPI(tokenRoutes, functions, dbConfig);
+var usersAPI = require('./lib/routes/users');
+usersAPI(tokenRoutes);
