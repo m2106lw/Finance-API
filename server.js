@@ -24,6 +24,9 @@ server.once('error', function(err) {
 	else if (err.code === 'EACCES') {
 		console.log(getTimestamp() + ": Permission denied for port " + config.port);
 	}
+	else if (err.code === ' ELIFECYCLE') {
+		console.log(getTimestamp() + ": Server Stopped");
+	}
 	else {
 		console.error(getTimestamp() + ": Got error of " + err.code);
 	}
