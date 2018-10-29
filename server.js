@@ -64,18 +64,21 @@ tokenAPI(tokenRoutes);
 
 // Load up the api modules
 // Accounts
-var accountsAPI = require('./lib/routes/accounts');
+const accountsAPI = require('./lib/routes/accounts');
 accountsAPI(tokenRoutes);
 // Balance
-var balance = require('./lib/routes/balance');
+const balanceAPI = require('./lib/routes/balance');
+balanceAPI(tokenRoutes);
 // Balance
 var car = require('./lib/routes/car');
-// Categories
-var categories = require('./lib/routes/categories');
 // Gas
 var gas = require('./lib/routes/gas');
-// Payments
-var payments = require('./lib/routes/payments');
+// Transactions
+var transactionsAPI = require('./lib/routes/transactions');
+transactionsAPI(tokenRoutes);
+// TransactionTypes
+var transactionTypesAPI = require('./lib/routes/transaction_types');
+transactionTypesAPI(tokenRoutes);
 // Users
 var usersAPI = require('./lib/routes/users');
 usersAPI(tokenRoutes);
