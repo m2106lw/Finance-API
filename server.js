@@ -43,11 +43,12 @@ app.use(bodyParser.json());
 app.use(function (req, res, next) {
     //Enabling CORS
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+    res.header("Access-Control-Allow-Methods", "DELETE,GET,HEAD,OPTIONS,POST,PUT");
     res.header("Access-Control-Allow-Headers", "X-Requested-With, Authorization, Content-Type, Accept, X-Auth-Token");
     next();
 });
 
+// TODO: Fix the routing to be better
 // Routes Middleware
 // Secure the api calls
 var authRoutes = express.Router();
