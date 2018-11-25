@@ -9,26 +9,27 @@ const config = require('./config');
 // Functions - Needed throughout
 var functions = require('./lib/functions');
 // Needed functions
-var getTimestamp = functions.getTimestamp;
-var logAPICall = functions.logAPICall;
+const {logger, logAPICall} = require('./lib/logging');
 
 //Setting up server
 var server = app.listen(config.serverConfig.port || 8080, function () {
     var port = server.address().port;
-    console.log(getTimestamp() + ": App now running on port", port);
+	//console.log(getTimestamp() + ": App now running on port", port);
+	logger.info(`App now running on port ${port}`)
 });
+
 server.once('error', function(err) {
 	if (err.code === 'EADDRINUSE') {
-		console.log(getTimestamp() + ": Port " + config.serverConfig.port + " is already in use.");
+		logger.error(`Port ${config.serverConfig.port} is already in use.`);
 	}
 	else if (err.code === 'EACCES') {
-		console.log(getTimestamp() + ": Permission denied for port " + config.port);
+		logger.error(`Permission denied for port ${config.port}`);
 	}
 	else if (err.code === ' ELIFECYCLE') {
-		console.log(getTimestamp() + ": Server Stopped");
+		logger.error(`Server Stopped`);
 	}
 	else {
-		console.error(getTimestamp() + ": Got error of " + err.code);
+		logger.error(`Recieved error of ${err.code}`);
 	}
 });
 
@@ -50,28 +51,5 @@ app.use(function (req, res, next) {
 
 // Routes Middleware
 // Secure the api calls
-var authRoutes = express.Router();
 app.use('/login', require('./lib/routes/login'));
-var tokenRoutes = express.Router(); 
 app.use('/api', require('./lib/routes/tokens'));
-
-// Load up the api modules
-// Accounts
-const accountsAPI = require('./lib/routes/accounts');
-accountsAPI(tokenRoutes);
-// Balance
-const balanceAPI = require('./lib/routes/balance');
-balanceAPI(tokenRoutes);
-// Balance
-var car = require('./lib/routes/car');
-// Gas
-var gas = require('./lib/routes/gas');
-// Transactions
-var transactionsAPI = require('./lib/routes/transactions');
-transactionsAPI(tokenRoutes);
-// TransactionTypes
-var transactionTypesAPI = require('./lib/routes/transaction_types');
-transactionTypesAPI(tokenRoutes);
-// Users
-var usersAPI = require('./lib/routes/users');
-usersAPI(tokenRoutes);
