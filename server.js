@@ -48,20 +48,12 @@ app.use(function (req, res, next) {
     next();
 });
 
-// TODO: Fix the routing to be better
 // Routes Middleware
 // Secure the api calls
 var authRoutes = express.Router();
-app.use('/login', authRoutes);
+app.use('/login', require('./lib/routes/login'));
 var tokenRoutes = express.Router(); 
-app.use('/api', tokenRoutes);
-
-
-// Any auth will have to go here
-var loginAPI = require('./lib/routes/login');
-loginAPI(authRoutes);
-var tokenAPI = require('./lib/routes/tokens');
-tokenAPI(tokenRoutes);
+app.use('/api', require('./lib/routes/tokens'));
 
 // Load up the api modules
 // Accounts
