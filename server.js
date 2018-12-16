@@ -1,55 +1,71 @@
-var express = require('express');
-var bodyParser = require("body-parser");
-var app = express();
-// Might try passing this around
-var mysql = require('mysql');
-// Config file for info
+#!/usr/bin/env node
+
+//Initializing node modules
+// Config file
 const config = require('./config');
+// Log what the server does
+const { logger } = require('./lib/logging');
+// The express app
+const app = require('./lib/app')();
 
-// Functions - Needed throughout
-var functions = require('./lib/functions');
-// Needed functions
-const {logger, logAPICall} = require('./lib/logging');
-
-//Setting up server
-var server = app.listen(config.serverConfig.port || 8080, function () {
+// This will create a server with the app listening on the port specified in the config file
+var server = app.listen(config.port || 8080, function () {
     var port = server.address().port;
-	//console.log(getTimestamp() + ": App now running on port", port);
-	logger.info(`App now running on port ${port}`)
+	logger.info({"category": "server", "status": "running", "description": `App now running on ${port}`, "environment": config.NODE_ENV});
 });
 
+// If the server recieves an error then we long the type and then shut everything down
 server.once('error', function(err) {
 	if (err.code === 'EADDRINUSE') {
-		logger.error(`Port ${config.serverConfig.port} is already in use.`);
+		logger.error({"category": "server", "status": "failure", "error": "EADDRINUSE", "description": `Port ${config.port} is already in use.`});
 	}
 	else if (err.code === 'EACCES') {
-		logger.error(`Permission denied for port ${config.port}`);
-	}
-	else if (err.code === ' ELIFECYCLE') {
-		logger.error(`Server Stopped`);
+		logger.error({"category": "server", "status": "failure", "error": "EACCES", "description": `Permission denied for port ${config.port}`});
 	}
 	else {
-		logger.error(`Recieved error of ${err.code}`);
+		logger.error({"category": "server", "status": "failure", "error": err.code, "description": err});
 	}
+	shutDown(err.code);
+});
+let connections = [];
+
+/* setInterval(() => server.getConnections(
+    (err, connections) => logger.info(`${connections} connections currently open`)
+), 1000); */
+
+server.on('connection', connection => {
+    connections.push(connection);
+    connection.on('close', () => connections = connections.filter(curr => curr !== connection));
 });
 
-// Body Parser Middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+// TODO: Close down any connections remaining since they will stop the server from closing
+// https://stackoverflow.com/questions/43003870/how-do-i-shut-down-my-express-server-gracefully-when-its-process-is-killed
+// Close down everything and log the shutdown code
+function shutDown(shutdownCode) {
+    server.close(() => {
+		if (shutdownCode == undefined) {
+			logger.info({"category": "server", "status": "shutdown", "error": "Undefined, probably due to use on Windows"});
+			process.exit(1);
+		}
+		else if ("SIG" === shutdownCode.substring(0,3)) {
+			logger.info({"category": "server", "status": "shutdown", "type": shutdownCode});
+			process.exit(0);
+		}
+		else {
+			logger.info({"category": "server", "status": "shutdown", "error": shutdownCode});
+			process.exit(1);
+		}
+	});
+	
+	connections.forEach(curr => curr.end());
+    setTimeout(() => connections.forEach(curr => curr.destroy()), 5000);
+}
 
-// ### We need to set this in the environment variables ###
-//app.set('superSecret', config.secret_key); // secret variable
+// Specific process ending calls
+process.on('SIGTERM', shutDown);
+process.on('SIGINT', shutDown);
 
-//CORS Middleware
-app.use(function (req, res, next) {
-    //Enabling CORS
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "DELETE,GET,HEAD,OPTIONS,POST,PUT");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With, Authorization, Content-Type, Accept, X-Auth-Token");
-    next();
-});
-
-// Routes Middleware
-// Secure the api calls
-app.use('/login', require('./lib/routes/login'));
-app.use('/api', require('./lib/routes/tokens'));
+// Export the server
+module.exports = function() {
+	return server;
+}
