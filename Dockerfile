@@ -1,17 +1,29 @@
-FROM node:alpine
+FROM node:10-alpine
 
-WORKDIR /usr/app
+LABEL author="Matthew Williams <me2106@gmail.com>"
 
-RUN apk add --no-cache --virtual .build-deps git
+# Create app directory
+WORKDIR /usr/src/app 
 
-RUN git clone https://github.com/m2106lw/Finance-API.git
-RUN apk del .build-deps
-RUN ls /usr/app/Finance-API
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+#COPY package*.json ./
+COPY . . 
 
-WORKDIR /usr/app/Finance-API
-COPY config.js .
-RUN npm install --only=production
+# Maybe look into pulling code from git
+# --no-cache: download package index on-the-fly, no need to cleanup afterwards
+# --virtual: bundle packages, remove whole bundle at once, when done
+#RUN apk --no-cache --virtual add .build-deps add python make g++ && \
+#    apk del build-dependencies && \
+RUN apk add --no-cache --virtual .build-deps \
+    make \
+    gcc \
+    g++ \
+    python && \
+    npm ci --only=production && \
+    apk del .build-deps
 
 EXPOSE 8080
 
-CMD npm start
+CMD [ "npm", "start" ]
